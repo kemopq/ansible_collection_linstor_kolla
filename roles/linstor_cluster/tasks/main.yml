@@ -1,0 +1,15 @@
+---
+- name: "Check linstor_kolla_action variable"
+  assert:
+    that:
+      - (linstor_kolla_action == 'deploy') or (linstor_kolla_action == 'destroy')
+    fail_msg: "Wrong value of linstor_kolla_action variable = {{ linstor_kolla_action }}"
+    quiet: 'yes'
+
+- name: "Print input params"
+  debug:
+    msg: |
+      "linstor_kolla_action: {{ linstor_kolla_action }}"
+
+- name: "include tasks {{ linstor_kolla_action }}.yml"
+  include_tasks: "{{ linstor_kolla_action }}.yml"

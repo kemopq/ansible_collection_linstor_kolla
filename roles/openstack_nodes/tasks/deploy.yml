@@ -1,0 +1,14 @@
+---
+- name: Copy linstor python driver to node
+  copy:
+    src: "{{ linstor_python_package }}"
+    dest: "/tmp"
+    mode: 0644
+
+- name: Include cinder containers tasks file
+  vars:
+    linstor_python_package_name: "{{ linstor_python_package | basename }}"
+  include_tasks: cinder_cont_tasks.yml
+  loop: "{{ cinder_containers }}"
+  loop_control:
+    loop_var: cinder_container

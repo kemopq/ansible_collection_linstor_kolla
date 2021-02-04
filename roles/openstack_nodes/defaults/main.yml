@@ -1,0 +1,6 @@
+---
+cinder_containers:
+  - cinder_api
+  - cinder_scheduler
+  - cinder_volume
+  - cinder_backup

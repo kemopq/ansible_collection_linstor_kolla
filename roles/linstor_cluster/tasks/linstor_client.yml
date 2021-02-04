@@ -1,0 +1,33 @@
+---
+- name: "Run linstor client command: {{ linstor_client_command }}"
+  vars:
+    cont_namespace: "{% if linstor_docker_registry_namespace %}{{ linstor_docker_registry_namespace }}/{% else %}{% endif %}"
+  docker_container:
+    name: "linstor-client"
+    image: "{{ linstor_docker_registry }}/{{ cont_namespace }}linstor-client"
+    state: started
+    network_mode: bridge
+    detach: 'no'
+    env:
+      LS_CONTROLLERS: "{{ linstor_controller_ip }}"
+    command: "-m {{ linstor_client_command }}"
+  register: container_command_output
+
+- name: Return result of the lindstor client command (result available)
+  set_fact:
+    linstor_client_result: "{{ container_command_output.container.Output | regex_replace('\n *', '') | regex_replace('\\]\\[.*$',']') }}"
+  when: container_command_output.container.Output is defined
+
+- name: Return result of the lindstor client command (result not available)
+  set_fact:
+    linstor_client_result: "Result not available"
+  when: container_command_output.container.Output is not defined
+
+- name: "Print result of linstor client command: {{ linstor_client_command }}"
+  debug:
+    var: linstor_client_result
+
+- name: "Remove linstor client container"
+  docker_container:
+    name: "linstor-client"
+    state: absent

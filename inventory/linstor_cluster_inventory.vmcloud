@@ -1,0 +1,17 @@
+[deployment_srv]
+# localhost    ansible_connection=local
+faikolla-node1  ansible_user=root
+
+
+[linstor_controller]
+vmcloud-node1.kemopq.test ansible_user=root
+
+[linstor_satellite]
+vmcloud-node1.kemopq.test ansible_user=root
+
+[linstor_all:children]
+linstor_controller
+linstor_satellite
+
+[cinder_storage:children]
+linstor_all

@@ -1,0 +1,63 @@
+---
+- name: Prepare linstor nodes
+  hosts: linstor_all
+  gather_facts: 'yes'
+
+  collections:
+    - kemopq.linstor_kolla
+  tasks:
+    - name: "Include linstor_nodes role"
+      vars:
+        linstor_kolla_action: "{{ ciaction }}"
+      import_role:
+        name: "linstor_nodes"
+      tags:
+        - lnodes
+
+- name: Setup linstor cluster
+  hosts: linstor_controller[0]
+  gather_facts: 'no'
+
+  collections:
+    - kemopq.linstor_kolla
+
+  tasks:
+    - name: "Include linstor_cluster role"
+      vars:
+        linstor_kolla_action: "{{ ciaction }}"
+      import_role:
+        name: "linstor_cluster"
+      tags:
+        - lcluster
+
+- name: Prepare Cinder configuration on Openstack deployment server
+  hosts: deployment_srv
+  gather_facts: 'no'
+
+  collections:
+    - kemopq.linstor_kolla
+
+  tasks:
+    - name: "Include openstack_config role"
+      vars:
+        linstor_kolla_action: "{{ ciaction }}"
+      import_role:
+        name: "openstack_config"
+      tags:
+        - osconfig
+
+- name: Prepare Openstack Cinder nodes
+  hosts: cinder_storage
+  gather_facts: 'no'
+
+  collections:
+    - kemopq.linstor_kolla
+
+  tasks:
+    - name: "Include openstack_nodes role"
+      vars:
+        linstor_kolla_action: "{{ ciaction }}"
+      import_role:
+        name: "openstack_nodes"
+      tags:
+        - osnodes

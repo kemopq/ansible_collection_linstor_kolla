@@ -1,0 +1,53 @@
+---
+############################################################
+#  tasks file for cleaning linstor cluster nodes
+############################################################
+
+- name: Set variable with host address on storage network
+  vars:
+    linstor_controller_ip_list: "{{ ansible_all_ipv4_addresses | ansible.netcommon.reduce_on_network(linstor_network_cidr) }}"
+  set_fact:
+    linstor_controller_ip: "{{ linstor_controller_ip_list[0] }}"
+
+- name: Print controller IP on storage network
+  debug:
+    var: linstor_controller_ip
+
+- name: Get linstor storage-pool list
+  vars:
+    linstor_client_command: "storage-pool list"
+  include_tasks: "linstor_client.yml"
+
+- name: Delete linstor storage pool
+  vars:
+    linstor_client_command: "storage-pool delete {{ item }} {{ drbd_storage_pool_name }}"
+  include_tasks: "linstor_client.yml"
+  when: drbd_storage_pool_name in linstor_client_result | kemopq.linstor_kolla.linstor_pool_list
+  with_items:
+    - "{{ linstor_nodes_satellite }}"
+
+- name: Get linstor cluster node list
+  vars:
+    linstor_client_command: "node list"
+  include_tasks: "linstor_client.yml"
+
+- name: Remove node from linstor cluster
+  vars:
+    linstor_client_command: "node delete {{ item }}"
+  include_tasks: "linstor_client.yml"
+  when: item in linstor_client_result | kemopq.linstor_kolla.linstor_node_list
+  with_items:
+    - "{{ linstor_nodes_all }}"
+
+- name: Remove linstor client container
+  docker_container:
+    name: "linstor-client"
+    state: absent
+
+- name: Remove image of linstor client container
+  vars:
+    cont_namespace: "{% if linstor_docker_registry_namespace %}{{ linstor_docker_registry_namespace }}/{% else %}{% endif %}"
+  docker_image:
+    name: "{{ linstor_docker_registry }}/{{ cont_namespace }}linstor-client"
+    state: absent
+    force: 'yes'

@@ -1,0 +1,17 @@
+[deployment_srv]
+# localhost    ansible_connection=local
+faikolla-node1.edge.iskratel.mak  ansible_user=root
+
+
+[linstor_controller]
+linstor-node1.edge.iskratel.mak ansible_user=root
+
+[linstor_satellite]
+linstor-node1.edge.iskratel.mak ansible_user=root
+
+[linstor_all:children]
+linstor_controller
+linstor_satellite
+
+[cinder_storage:children]
+linstor_controller

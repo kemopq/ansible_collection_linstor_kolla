@@ -1,0 +1,19 @@
+---
+- name: "Check the existance of container {{ cinder_container }}"
+  docker_container_info:
+    name: "{{ cinder_container }}"
+  register: container_info_result
+
+- name: "Container tasks on {{ cinder_container }}"
+  block:
+
+    - name: Copy linstor python driver to container
+      command: "docker cp /tmp/{{ linstor_python_package_name }} {{ cinder_container }}:/tmp"
+
+    - name: Install linstor python driver to container
+      command: "docker exec --user root  {{ cinder_container }} pip3 install /tmp/{{ linstor_python_package_name }}"
+
+    - name: Restart container
+      command: "docker restart {{ cinder_container }}"
+
+  when: container_info_result.exists

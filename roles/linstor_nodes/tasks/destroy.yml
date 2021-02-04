@@ -1,0 +1,69 @@
+---
+############################################################
+#  tasks file for cleaning linstor cluster nodes
+############################################################
+- name: Tasks on satellite nodes
+  block:
+    - name: Stop and remove linstor satellite container
+      docker_container:
+        name: "linstor-satellite"
+        state: absent
+
+    - name: Remove linstor drbd kernel driver container
+      docker_container:
+        name: "linstor-drbd9"
+        state: absent
+
+    - name: Remove image of linstor satellite container
+      vars:
+        cont_namespace: "{% if linstor_docker_registry_namespace %}{{ linstor_docker_registry_namespace }}/{% else %}{% endif %}"
+      docker_image:
+        name: "{{ linstor_docker_registry }}/{{ cont_namespace }}linstor-satellite"
+        state: absent
+
+    - name: Remove image of drbd kernel driver container
+      vars:
+        cont_namespace: "{% if linstor_docker_registry_namespace %}{{ linstor_docker_registry_namespace }}/{% else %}{% endif %}"
+      docker_image:
+        name: "{{ linstor_docker_registry }}/{{ cont_namespace }}drbd9-bionic"
+        state: absent
+
+    - name: Unload drbd_transport_tcp kernel module
+      shell: |
+        rmmod drbd_transport_tcp
+        rmmod drbd
+      ignore_errors: 'yes'
+
+    - name: Remove a thin LV in drbd VG
+      lvol:
+        vg: "{{ drbd_volume_group_name }}"
+        thinpool: "{{ drbd_thin_lv_name }}"
+        state: absent
+        force: 'yes'
+      when: (drbd_thin_lvm | bool) and
+            (drbd_thin_lv_name in ansible_lvm.lvs)
+
+    - name: Remove a drbd volume group
+      lvg:
+        vg: "{{ drbd_volume_group_name }}"
+        pvs: "{{ drbd_volumes }}"
+        state: absent
+      when: drbd_volume_group_name in ansible_lvm.vgs
+
+  when: inventory_hostname in linstor_nodes_satellite
+
+- name: Tasks on controller nodes
+  block:
+    - name: Stop and remove linstor controller container
+      docker_container:
+        name: "linstor-controller"
+        state: absent
+
+    - name: Remove image of linstor controller container
+      vars:
+        cont_namespace: "{% if linstor_docker_registry_namespace %}{{ linstor_docker_registry_namespace }}/{% else %}{% endif %}"
+      docker_image:
+        name: "{{ linstor_docker_registry }}/{{ cont_namespace }}linstor-controller"
+        state: absent
+
+  when: inventory_hostname in linstor_nodes_controller

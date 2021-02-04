@@ -1,0 +1,10 @@
+[linstor]
+volume_backend_name = linstor
+volume_driver = cinder.volume.drivers.linstordrv.LinstorDrbdDriver
+linstor_default_volume_group_name={{ drbd_volume_group_name }}
+linstor_default_uri=linstor://localhost
+linstor_default_storage_pool_name={{ drbd_storage_pool_name }}
+linstor_default_resource_size=1
+linstor_volume_downsize_factor=4096
+linstor_controller_diskless=False
+linstor_autoplace_count={{ drbd_nr_of_replicas }}

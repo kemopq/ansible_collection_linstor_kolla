@@ -1,0 +1,56 @@
+---
+############################################################
+#  tasks file for preparing linstor cluster
+############################################################
+- name: Set variable with host address on storage network
+  vars:
+    linstor_controller_ip_list: "{{ ansible_all_ipv4_addresses | ansible.netcommon.reduce_on_network(linstor_network_cidr) }}"
+  set_fact:
+    linstor_controller_ip: "{{ linstor_controller_ip_list[0] }}"
+
+- name: Print controller IP on storage network
+  debug:
+    var: linstor_controller_ip
+
+- name: Assure that all nodes has IP address on storage network
+  vars:
+    ip_addr_length: "{{ hostvars[item].ansible_facts.all_ipv4_addresses | ansible.netcommon.reduce_on_network(linstor_network_cidr) | length }}"
+  assert:
+    that:
+      - ip_addr_length == "1"
+    fail_msg: "{{ item }} has no IP on storage network ({{ linstor_network_cidr }}) ip_addr_length={{ ip_addr_length }}"
+    quiet: 'yes'
+  with_items:
+    - "{{ linstor_nodes_all }}"
+
+- name: Get linstor cluster node list
+  vars:
+    linstor_client_command: "node list"
+  include_tasks: "linstor_client.yml"
+
+- name: Add node to linstor cluster
+  vars:
+    ip_addr: "{{ hostvars[item].ansible_facts.all_ipv4_addresses | ansible.netcommon.reduce_on_network(linstor_network_cidr) }}"
+    node_type:
+      "{% if (item in linstor_nodes_controller) and (item in linstor_nodes_satellite) %}Combined
+       {% elif (item in linstor_nodes_controller) %}Controller
+       {% else %}Satellite
+       {% endif %}"
+    linstor_client_command: "node create {{ item }} {{ ip_addr[0] }} --node-type {{ node_type }}"
+  include_tasks: "linstor_client.yml"
+  when: item not in linstor_client_result | kemopq.linstor_kolla.linstor_node_list
+  with_items:
+    - "{{ linstor_nodes_all }}"
+
+- name: Get linstor storage-pool list
+  vars:
+    linstor_client_command: "storage-pool list"
+  include_tasks: "linstor_client.yml"
+
+- name: Create linstor storage pool
+  vars:
+    linstor_client_command: "storage-pool create lvmthin {{ item }} {{ drbd_storage_pool_name }} {{ drbd_volume_group_name }}/{{ drbd_thin_lv_name }}"
+  include_tasks: "linstor_client.yml"
+  when: drbd_storage_pool_name not in linstor_client_result | kemopq.linstor_kolla.linstor_pool_list
+  with_items:
+    - "{{ linstor_nodes_satellite }}"

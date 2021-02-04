@@ -1,0 +1,4 @@
+---
+linstor_nodes_all: "{{ groups.linstor_all | unique | list  }}"
+linstor_nodes_controller: "{{ groups.linstor_controller | unique | list  }}"
+linstor_nodes_satellite: "{{ groups.linstor_satellite | unique | list  }}"

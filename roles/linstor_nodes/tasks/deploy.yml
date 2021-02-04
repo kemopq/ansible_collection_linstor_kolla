@@ -1,0 +1,72 @@
+---
+############################################################
+#  tasks file for preparing nodes of linstor cluster
+############################################################
+- name: Log into drbd docker registry
+  docker_login:
+    registry_url: "{{ linstor_docker_registry }}"
+    username: "{{ linstor_docker_registry_username }}"
+    password: "{{ linstor_docker_registry_password }}"
+
+- name: Tasks on satellite nodes
+  block:
+    - name: Create a drbd volume group
+      lvg:
+        vg: "{{ drbd_volume_group_name }}"
+        pvs: "{{ drbd_volumes }}"
+        state: present
+      when: drbd_volume_group_name not in ansible_lvm.vgs
+
+    - name: Create a thin LV in drbd VG
+      lvol:
+        vg: "{{ drbd_volume_group_name }}"
+        thinpool: "{{ drbd_thin_lv_name }}"
+        size: 100%FREE
+        state: present
+      when: (drbd_thin_lvm | bool) and
+            (drbd_thin_lv_name not in ansible_lvm.lvs)
+
+    - name: Run linstor drbd kernel driver container
+      vars:
+        cont_namespace: "{% if linstor_docker_registry_namespace %}{{ linstor_docker_registry_namespace }}/{% else %}{% endif %}"
+      docker_container:
+        name: "linstor-drbd9"
+        image: "{{ linstor_docker_registry }}/{{ cont_namespace }}drbd9-bionic"
+        state: started
+        privileged: 'yes'
+        auto_remove: 'yes'
+        network_mode: bridge
+        volumes:
+          - /lib/modules:/lib/modules
+
+    - name: Run linstor satellite container
+      vars:
+        cont_namespace: "{% if linstor_docker_registry_namespace %}{{ linstor_docker_registry_namespace }}/{% else %}{% endif %}"
+      docker_container:
+        name: "linstor-satellite"
+        image: "{{ linstor_docker_registry }}/{{ cont_namespace }}linstor-satellite"
+        state: started
+        privileged: 'yes'
+        network_mode: host
+        volumes:
+          - /dev:/dev
+
+  when: inventory_hostname in linstor_nodes_satellite
+
+- name: Run linstor controller container
+  vars:
+    cont_namespace: "{% if linstor_docker_registry_namespace %}{{ linstor_docker_registry_namespace }}/{% else %}{% endif %}"
+  docker_container:
+    name: "linstor-controller"
+    image: "{{ linstor_docker_registry }}/{{ cont_namespace }}linstor-controller"
+    state: started
+    network_mode: bridge
+    ports:
+      - "3370:3370"
+      - "3376:3376"
+      - "3377:3377"
+  when: inventory_hostname in linstor_nodes_controller
+
+- name: Pause for 10s for containers to start working
+  pause:
+    seconds: 10

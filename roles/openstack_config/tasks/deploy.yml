@@ -1,0 +1,20 @@
+---
+- name: Add linstor to enabled backends
+  vars:
+    cinder_linstor_backend: "linstor"
+    cinder_all_backends_list: "{{ cinder_other_backends | default([]) + [cinder_linstor_backend] }}"
+    cinder_all_backends: "{{ cinder_all_backends_list | join(', ') }}"
+  ini_file:
+    path: "{{ cinder_conf_path }}/cinder.conf"
+    section: DEFAULT
+    option: enabled_backends
+    value: "{{ cinder_all_backends }}"
+    mode: '0644'
+    state: present
+
+- name: Insert linstor section to cinder.conf
+  blockinfile:
+    dest: "{{ cinder_conf_path }}/cinder.conf"
+    block: "{{ lookup('template', 'cinder-conf_linbit.j2') }}"
+    mode: 0644
+    create: 'yes'

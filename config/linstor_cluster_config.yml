@@ -1,0 +1,22 @@
+---
+# drbd
+drbd_volume_group_name: "drbdpool"        # LVM volume group name, which will be created for linstor storage pool
+drbd_thin_lvm: "yes"                      # [yes/no] - 'yes' LVM thin pool will be used
+drbd_thin_lv_name: "thinpool"             # thin pool name
+drbd_storage_pool_name: "DfltStorPool"    # DRBD storage pool name
+drbd_nr_of_replicas: 1                    # Nr. of DRBD replicas
+drbd_volumes:                             # list of volumes to be used for Linstor cluster
+  "/dev/vdc"                              # when not all satellite nodes in linstor cluster are the same, set this parameter in inventory
+
+# linstor
+linstor_network_cidr: "192.168.130.0/24"  # CIDR of storage network
+linstor_docker_registry: "drbd.io"        # docker registry
+linstor_docker_registry_username: "unknown"        # docker registry username
+linstor_docker_registry_password: "unknown"        # docker registry password
+linstor_docker_registry_namespace:                 # docker registry namespace
+linstor_python_package: "../files/python-linstor-1.6.0.tar.gz"  # path to linstor python package
+
+# openstack
+cinder_conf_path: "/opt/etc-kolla/vmcloud/config"   # location of configuration overrides (node_custom_config in kolla ansible globals.yml)
+cinder_other_backends:                    # other cinder backends
+  - lvm-1
