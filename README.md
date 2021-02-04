@@ -1,6 +1,6 @@
 README.linstor_kolla  
 # kemopq.linstor_kolla collection
-Collection for creating Linstor cluster and integrate it to kolla Openstack.
+Collection for creating Linstor cluster and integrate it to kolla Openstack.  
 https://www.linbit.com/linstor/
 
 ### Installing collection  
@@ -8,7 +8,7 @@ Install this collection locally:
 ```
 ansible-galaxy collection install kemopq.linstor_kolla -p ./collections
 ```
-_./collectins_ folder should be included to _collections_path_ parameter in ansible configuration file. See:
+_./collections_ folder should be included to _collections_path_ parameter in ansible configuration file. See:
 https://docs.ansible.com/ansible/latest/reference_appendices/config.html#ansible-configuration-settings-locations
 
 ### Using collection  
@@ -81,7 +81,7 @@ Template of inventory file is in config folder. There are three types of server:
 - deployment_srv => the server where kolla ansible playbooks run
 - linstor_controller => linstor controller nodes
 - linstor_satellite => linstor satellite nodes
-- cinder_storage => nodes, which will play the role of cinder storage on Linstor cluster; usually on these nodes Linstor controller runs
+- cinder_storage => nodes, which will play the role of cinder storage on Linstor cluster; usually on these nodes Linstor controller runs  
 A node can be in controller and satellite group, if it has both roles.
 
 ### Running your playbook
@@ -99,14 +99,18 @@ ansible-playbook  -i localhost, -e linstor_kolla_action=[deploy/destroy] -e "@<y
 
 ### Basic test
 On openstack client host:
+```
 source admin-openrc.sh
 openstack volume type create linstor
 openstack volume type set linstor --property volume_backend_name=linstor
 openstack volume create --type linstor --size 1 --availability-zone nova linstor-testvol
 openstack volume list
+```
 
 On cinder controller:
+```
 docker run -it --rm -e LS_CONTROLLERS="192.168.100.11" drbd.io/linstor-client resource list
+```
 
 ### Testing with molecule
 Not prepaired yet
